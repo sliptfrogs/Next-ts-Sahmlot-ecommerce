@@ -1,26 +1,163 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-serif: "Playfair Display", "Times New Roman", serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Sahmlot — warm cream + ink design system */
+    --background: 40 33% 97%;
+    --foreground: 24 14% 12%;
+
+    --card: 40 40% 99%;
+    --card-foreground: 24 14% 12%;
+
+    --popover: 40 40% 99%;
+    --popover-foreground: 24 14% 12%;
+
+    --primary: 24 14% 12%;
+    --primary-foreground: 40 33% 97%;
+
+    --secondary: 36 25% 92%;
+    --secondary-foreground: 24 14% 12%;
+
+    --muted: 36 20% 93%;
+    --muted-foreground: 25 8% 42%;
+
+    --accent: 18 65% 52%;
+    --accent-foreground: 40 33% 97%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 40 33% 97%;
+
+    --border: 30 15% 86%;
+    --input: 30 15% 86%;
+    --ring: 24 14% 12%;
+
+    --radius: 0.25rem;
+
+    /* Brand tokens */
+    --brand-cream: 40 45% 95%;
+    --brand-sand: 34 30% 88%;
+    --brand-ink: 24 14% 12%;
+    --brand-clay: 18 65% 52%;
+    --brand-olive: 80 18% 38%;
+
+    --gradient-warm: linear-gradient(180deg, hsl(40 45% 96%), hsl(34 30% 90%));
+    --gradient-hero: linear-gradient(135deg, hsl(40 45% 95% / 0.0), hsl(40 45% 95% / 0.95));
+    --shadow-soft: 0 1px 2px hsl(24 14% 12% / 0.04), 0 8px 24px -8px hsl(24 14% 12% / 0.08);
+    --shadow-card: 0 2px 6px hsl(24 14% 12% / 0.05), 0 12px 32px -12px hsl(24 14% 12% / 0.12);
+    --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Z-index scale */
+    --z-header: 50;
+    --z-overlay: 60;
+    --z-drawer: 70;
+  }
+
+  .dark {
+    --background: 24 14% 8%;
+    --foreground: 40 33% 95%;
+    --card: 24 14% 10%;
+    --card-foreground: 40 33% 95%;
+    --popover: 24 14% 10%;
+    --popover-foreground: 40 33% 95%;
+    --primary: 40 33% 95%;
+    --primary-foreground: 24 14% 12%;
+    --secondary: 24 10% 16%;
+    --secondary-foreground: 40 33% 95%;
+    --muted: 24 10% 16%;
+    --muted-foreground: 30 10% 65%;
+    --accent: 18 65% 55%;
+    --accent-foreground: 40 33% 95%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 40 33% 95%;
+    --border: 24 10% 20%;
+    --input: 24 10% 20%;
+    --ring: 40 33% 95%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --shadow-soft: 0 1px 2px hsl(24 14% 12% / 0.04), 0 8px 24px -8px hsl(24 14% 12% / 0.08);
+  --shadow-card: 0 2px 6px hsl(24 14% 12% / 0.05), 0 12px 32px -12px hsl(24 14% 12% / 0.12);
+
+  --background-image-gradient-warm: linear-gradient(180deg, hsl(40 45% 96%), hsl(34 30% 90%));
+
+  --z-header: var(--z-header);
+  --z-overlay: var(--z-overlay);
+  --z-drawer: var(--z-drawer);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer utilities {
+  .container-page {
+    @apply mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Add this to your globals.css file */
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .marquee {
+    animation: marquee 20s linear infinite;
+  }
 }
