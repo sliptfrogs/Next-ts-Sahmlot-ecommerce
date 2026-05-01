@@ -1,535 +1,415 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Heart, Menu, Search, ShoppingBag, User, X, ChevronDown, ArrowRight,
-  Shirt, Layers, Wind, Leaf, Sparkles, Gift, Tag, Star, Package,
-  Palette, Sun, Droplets, Feather, Gem, Clock
-} from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, ChevronDown, Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { megaMenus } from "@/data/menu";
+import { megaMenus } from "@/data/menu"; // your updated menu data
 import { cn } from "@/lib/utils";
-import FocusTrap from "focus-trap-react";
 
-// ─── Types (extend the imported menu structure) ─────────────────────────────
-interface MenuLink {
-  label: string;
-  to: string;
-  icon?: string;
-}
-
-interface MenuColumn {
-  heading: string;
-  links: MenuLink[];
-}
-
-interface MegaMenuItem {
-  id: string;
-  label: string;
-  to: string;
-  accent?: boolean;
-  columns: MenuColumn[];
-  hero?: {
-    image: string;
-    caption: string;
-    sub: string;
-    to: string;
-  };
-}
-
-const typedMegaMenus = megaMenus as MegaMenuItem[];
-
-// ─── Icon registry ────────────────────────────────────────────────────────────
-const ICON_MAP: Record<string, React.ElementType> = {
-  shirt: Shirt,
-  layers: Layers,
-  wind: Wind,
-  leaf: Leaf,
-  sparkles: Sparkles,
-  gift: Gift,
-  tag: Tag,
-  star: Star,
-  package: Package,
-  palette: Palette,
-  sun: Sun,
-  droplets: Droplets,
-  feather: Feather,
-  gem: Gem,
-  clock: Clock,
-};
-
-const NavIcon = ({ name, className }: { name?: string; className?: string }) => {
-  const Icon = name && ICON_MAP[name] ? ICON_MAP[name] : Layers;
-  return <Icon className={className} aria-hidden="true" />;
-};
-
-// ─── Logo ─────────────────────────────────────────────────────────────────────
+// ✅ Logo extracted outside component – fixes "component created during render"
 const Logo = ({ onClick }: { onClick?: () => void }) => (
   <Link
     href="/"
     onClick={onClick}
-    className="flex items-center font-serif text-lg font-semibold tracking-tight lg:text-xl"
+    className="font-serif text-xl font-semibold tracking-tight inline-flex items-center"
     aria-label="Sahmlot home"
   >
     Sahml
-    <span className="inline-block h-2 w-2 rounded-full border-2 border-amber-400 mx-0.5" aria-hidden="true" />
+    <span className="mx-[1px] inline-block h-1.5 w-1.5 rounded-full bg-accent" />
     t
   </Link>
 );
 
-// ─── Count badge ──────────────────────────────────────────────────────────────
-const CountBadge = ({ count }: { count: number }) =>
-  count > 0 ? (
-    <span
-      className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-[9px] font-semibold text-black"
-      aria-label={`${count} item${count > 1 ? "s" : ""}`}
-    >
-      {count}
-    </span>
-  ) : null;
-
-// ─── Announcement bar (FIXED) ─────────────────────────────────────────────────
-const ANNOUNCE_KEY = "sahmlot_announce_v2";
-
-const AnnouncementBar = () => {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (!sessionStorage.getItem(ANNOUNCE_KEY)) setVisible(true);
-    }, 0);
-    return () => clearTimeout(timeoutId);
-  }, []);
-
-  const dismiss = useCallback(() => {
-    sessionStorage.setItem(ANNOUNCE_KEY, "1");
-    setVisible(false);
-  }, []);
-
-  if (!visible) return null;
-
-  return (
-    <div role="banner" className="relative flex items-center justify-center bg-amber-400 px-8 py-2 text-[11px] font-medium uppercase tracking-[0.15em] text-black">
-      <span>Free shipping on orders over $75 &mdash; Cambodia-made, naturally.</span>
-      <button onClick={dismiss} aria-label="Dismiss announcement" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
-        <X className="h-3 w-3" />
-      </button>
-    </div>
-  );
-};
-
-// ─── Mega menu panel ──────────────────────────────────────────────────────────
-const MegaPanel = ({
-  menu,
-  onClose,
-  onMouseEnter,
-  onMouseLeave,
-}: {
-  menu: MegaMenuItem | null;
-  onClose: () => void;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-}) => {
-  const hero = menu?.hero;
-  const heroImage = hero?.image ?? "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80";
-  const heroCaption = hero?.caption ?? menu?.label ?? "Explore";
-  const heroSub = hero?.sub ?? "Discover the collection";
-  const heroTo = hero?.to ?? menu?.to ?? "/shop";
-
-  return (
-    <div
-      className={cn(
-        "absolute left-0 right-0 top-full z-50 hidden lg:block",
-        "transition-all duration-200 ease-out",
-        menu
-          ? "opacity-100 visible translate-y-0 pointer-events-auto"
-          : "opacity-0 invisible -translate-y-2 pointer-events-none"
-      )}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <div className="w-full bg-white border-t border-gray-100 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.15)]">
-        <div className="container-page">
-          <div className="flex" style={{ minHeight: 360 }}>
-
-            {/* Left: icon link columns */}
-            <div className="flex flex-1 gap-10 py-10 pr-12">
-              {menu?.columns?.map((col) => (
-                <div key={col.heading} className="min-w-[150px]">
-                  <div className="flex items-center gap-2 mb-5">
-                    <span className="block w-3 h-[1.5px] bg-amber-400 rounded-full flex-shrink-0" />
-                    <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-gray-400 whitespace-nowrap">
-                      {col.heading}
-                    </p>
-                  </div>
-
-                  <ul className="space-y-0.5">
-                    {col.links.map((link) => (
-                      <li key={link.label}>
-                        <Link
-                          href={link.to}
-                          onClick={onClose}
-                          className="group flex items-center gap-3 rounded-lg px-2 py-[9px] hover:bg-gray-50 transition-colors duration-150"
-                        >
-                          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 transition-all duration-150 group-hover:bg-amber-400 group-hover:text-black">
-                            <NavIcon name={link.icon} className="h-[14px] w-[14px]" />
-                          </span>
-                          <span className="text-[13px] font-light text-gray-600 transition-colors duration-150 group-hover:text-black">
-                            {link.label}
-                          </span>
-                          <ArrowRight className="ml-auto h-3 w-3 text-amber-400 opacity-0 -translate-x-1.5 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0" />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {/* Right: hero panel */}
-            <div className="w-[38%] flex-shrink-0 relative overflow-hidden">
-              <Link
-                href={heroTo}
-                onClick={onClose}
-                className="group absolute inset-0 block"
-                tabIndex={menu ? 0 : -1}
-                aria-label={`Shop ${heroCaption}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={heroImage}
-                  alt={heroCaption}
-                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                <span className="absolute top-5 right-5 rounded-full bg-amber-400 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-black select-none">
-                  New season
-                </span>
-                <div className="absolute bottom-0 left-0 right-0 p-7">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/60 mb-1.5">
-                    {heroSub}
-                  </p>
-                  <p className="font-serif text-[22px] font-semibold text-white leading-snug mb-5">
-                    {heroCaption}
-                  </p>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-amber-400 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-black transition-all duration-200 group-hover:bg-white group-hover:text-black">
-                    Shop now <ArrowRight className="h-3 w-3" />
-                  </span>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── Search bar (FIXED) ───────────────────────────────────────────────────────
-const SearchBar = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (open) {
-      requestAnimationFrame(() => inputRef.current?.focus());
-    } else {
-      const timeoutId = setTimeout(() => setQuery(""), 0);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [open]);
-
-  const submit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      const q = query.trim();
-      if (!q) return;
-      router.push(`/shop?q=${encodeURIComponent(q)}`);
-      onClose();
-    },
-    [query, router, onClose]
-  );
-
-  return (
-    <div
-      className={cn("overflow-hidden transition-all duration-200", open ? "max-h-14 border-t border-gray-100" : "max-h-0")}
-      aria-hidden={!open}
-    >
-      <form onSubmit={submit} className="container-page flex items-center gap-3 py-3">
-        <Search className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" aria-hidden="true" />
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search products…"
-          className="w-full bg-transparent text-sm font-light outline-none placeholder:text-gray-400"
-          aria-label="Search products"
-          tabIndex={open ? 0 : -1}
-        />
-        {query && (
-          <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="text-gray-400 hover:text-black transition-colors cursor-pointer">
-            <X className="h-3 w-3" />
-          </button>
-        )}
-        <button type="button" onClick={onClose} aria-label="Close search" className="text-gray-400 hover:text-black transition-colors cursor-pointer pl-2 border-l border-gray-100">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </form>
-    </div>
-  );
-};
-
-// ─── Mobile drawer (FIXED) ────────────────────────────────────────────────────
-const MobileDrawer = ({
-  open, onClose, cartCount, wishCount, onOpenCart,
-}: {
-  open: boolean; onClose: () => void; cartCount: number; wishCount: number; onOpenCart: () => void;
-}) => {
-  const pathname = usePathname();
-  const [expanded, setExpanded] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) {
-      const timeoutId = setTimeout(() => setExpanded(null), 0);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [open]);
-
-  const toggle = useCallback((id: string) => setExpanded((p) => (p === id ? null : id)), []);
-
-  return (
-    <FocusTrap active={open}>
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-50 h-full w-[85%] max-w-sm bg-white flex flex-col lg:hidden shadow-2xl",
-          "transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
-        )}
-        style={{ transform: open ? "translateX(0)" : "translateX(-100%)" }}
-        aria-label="Mobile navigation"
-        aria-modal={open || undefined}
-        role={open ? "dialog" : undefined}
-        aria-hidden={!open}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <Logo onClick={onClose} />
-          <button onClick={onClose} aria-label="Close menu" className="p-1.5 rounded-full text-gray-400 hover:text-black hover:bg-gray-50 transition-all cursor-pointer">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto px-5 pt-4 pb-6" aria-label="Mobile navigation">
-          {typedMegaMenus.map((m) => {
-            const isOpen = expanded === m.id;
-            const isCurrent = pathname?.startsWith(m.to) && m.to !== "/";
-            return (
-              <div key={m.id} className="border-b border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => toggle(m.id)}
-                  className={cn("flex items-center justify-between w-full py-3.5 text-[14px] font-light cursor-pointer transition-colors", isCurrent ? "text-black" : "text-gray-600")}
-                  aria-expanded={isOpen}
-                  aria-controls={`mob-${m.id}`}
-                >
-                  <span className={cn(m.accent && "text-amber-400")}>{m.label}</span>
-                  <ChevronDown className={cn("h-3.5 w-3.5 text-gray-400 transition-transform duration-200", isOpen && "rotate-180")} aria-hidden="true" />
-                </button>
-
-                <div id={`mob-${m.id}`} className={cn("overflow-hidden transition-all duration-200", isOpen ? "max-h-[600px] pb-4" : "max-h-0")}>
-                  {m.columns.map((col) => (
-                    <div key={col.heading} className="ml-1 mb-4">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-gray-400 mt-2 mb-2">{col.heading}</p>
-                      <ul className="space-y-0.5">
-                        {col.links.map((link) => (
-                          <li key={link.label}>
-                            <Link
-                              href={link.to}
-                              onClick={onClose}
-                              className={cn(
-                                "flex items-center gap-3 rounded-lg px-2 py-2 transition-all duration-150",
-                                pathname === link.to ? "bg-amber-50 text-black" : "text-gray-500 hover:bg-gray-50 hover:text-black"
-                              )}
-                            >
-                              <span className={cn("flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md transition-colors duration-150", pathname === link.to ? "bg-amber-400 text-black" : "bg-gray-100 text-gray-500")}>
-                                <NavIcon name={link.icon} className="h-3 w-3" />
-                              </span>
-                              <span className="text-[13px]">{link.label}</span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </nav>
-
-        <div className="px-5 py-4 border-t border-gray-100 space-y-1">
-          <Link href="/account" onClick={onClose} className="flex items-center gap-3 py-2.5 text-sm text-gray-500 hover:text-black transition-colors"><User className="h-4 w-4 flex-shrink-0" /><span>My account</span></Link>
-          <Link href="/wishlist" onClick={onClose} className="flex items-center gap-3 py-2.5 text-sm text-gray-500 hover:text-black transition-colors"><Heart className="h-4 w-4 flex-shrink-0" /><span>Wishlist {wishCount > 0 && `(${wishCount})`}</span></Link>
-          <button onClick={() => { onClose(); onOpenCart(); }} className="flex items-center gap-3 py-2.5 text-sm text-gray-500 hover:text-black transition-colors w-full cursor-pointer"><ShoppingBag className="h-4 w-4 flex-shrink-0" /><span>Cart {cartCount > 0 && `(${cartCount})`}</span></button>
-          <p className="pt-3 text-[9px] text-gray-300 font-light tracking-widest text-center uppercase">Made in Cambodia · Natural fibers</p>
-        </div>
-      </aside>
-    </FocusTrap>
-  );
-};
-
-// ─── Main Header ──────────────────────────────────────────────────────────────
 const Header = () => {
   const { count, openCart } = useCart();
   const { count: wishCount } = useWishlist();
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
-
+  const [query, setQuery] = useState("");
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const navTriggerRefs = useRef<Map<string, HTMLElement>>(new Map());
-  const activeMenu = typedMegaMenus.find((m) => m.id === activeMenuId) ?? null;
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Route change cleanup – already async (setTimeout)
+  // Determine active menu based on route
+  const routeActiveId = (() => {
+    if (pathname !== "/shop") return null;
+    const cat = searchParams.get("cat");
+    const collection = searchParams.get("collection");
+    const q = searchParams.get("q");
+    if (q === "sale") return "sale";
+    if (cat === "new") return "new";
+    if (cat === "men") return "men";
+    if (cat === "women") return "women";
+    if (collection) return "collections";
+    return "clothing";
+  })();
+
+  // Reset UI state on route change
   useEffect(() => {
-    const id = setTimeout(() => { setActiveMenuId(null); setMobileOpen(false); setSearchOpen(false); }, 0);
-    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveMenu(null);
+    setMobileOpen(false);
+    setSearchOpen(false);
   }, [pathname, searchParams]);
 
-  // Scroll detection – event callback, no state set inside effect directly
+  // Body scroll lock for drawers / mega-menu
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-
-  // Body scroll lock – effect body does not call setState
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen || !!activeMenuId ? "hidden" : "";
+    const lock = mobileOpen || activeMenu !== null;
+    document.body.style.overflow = lock ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen, activeMenuId]);
+  }, [mobileOpen, activeMenu]);
 
-  // Escape key – event callback, safe
+  // ESC closes everything
   useEffect(() => {
-    const fn = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (activeMenuId) { navTriggerRefs.current.get(activeMenuId)?.focus(); setActiveMenuId(null); }
-      setMobileOpen(false);
-      setSearchOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveMenu(null);
+        setMobileOpen(false);
+        setSearchOpen(false);
+      }
     };
-    window.addEventListener("keydown", fn);
-    return () => window.removeEventListener("keydown", fn);
-  }, [activeMenuId]);
-
-  const enterMenu = useCallback((id: string) => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    setActiveMenuId(id);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const leaveMenu = useCallback(() => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => setActiveMenuId(null), 120);
-  }, []);
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
 
-  const closeMenu = useCallback(() => setActiveMenuId(null), []);
-  const closeMobile = useCallback(() => setMobileOpen(false), []);
-  const toggleSearch = useCallback(() => setSearchOpen((s) => !s), []);
+  const enterMenu = (id: string) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setActiveMenu(id);
+  };
+  const leaveMenu = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setActiveMenu(null), 140);
+  };
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    router.push(`/shop?q=${encodeURIComponent(query.trim())}`);
+    setSearchOpen(false);
+    setQuery("");
+  };
 
   return (
     <>
-      <AnnouncementBar />
+      <header className="sticky top-0 z-header w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="container-page flex h-14 items-center justify-between gap-4 lg:h-16">
+          <button
+            type="button"
+            aria-label="Open menu"
+            className="lg:hidden p-2 -ml-2 text-foreground/70 hover:text-foreground transition-colors"
+            onClick={() => setMobileOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-      <header className={cn("sticky top-0 z-40 w-full bg-white transition-shadow duration-200", scrolled ? "shadow-[0_1px_12px_0_rgba(0,0,0,0.07)]" : "border-b border-gray-100")}>
-        <div className="container-page">
-
-          {/* Mobile single row */}
-          <div className="flex h-14 items-center justify-between lg:hidden">
-            <button type="button" aria-label="Open menu" className="-ml-1 p-2 text-gray-600 hover:text-black transition-colors cursor-pointer" onClick={() => setMobileOpen(true)}>
-              <Menu className="h-5 w-5" />
-            </button>
+          <div className="flex-1 flex justify-center lg:flex-none lg:justify-start">
             <Logo />
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" aria-label="Search" className="h-8 w-8 text-gray-500 hover:text-black cursor-pointer" onClick={toggleSearch}><Search className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" aria-label="Cart" onClick={openCart} className="relative h-8 w-8 text-gray-500 hover:text-black cursor-pointer"><ShoppingBag className="h-4 w-4" /><CountBadge count={count} /></Button>
-            </div>
           </div>
 
-          {/* Desktop two-tier */}
-          <div className="hidden lg:flex lg:flex-col">
-            {/* Tier 1 */}
-            <div className="flex items-center justify-between py-3 border-b border-gray-50">
-              <Logo />
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" aria-label={searchOpen ? "Close search" : "Search"} aria-expanded={searchOpen} className="h-8 w-8 text-gray-500 hover:text-black cursor-pointer" onClick={toggleSearch}>
-                  {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-                </Button>
-                <Button variant="ghost" size="icon" aria-label="Account" className="h-8 w-8 text-gray-500 hover:text-black cursor-pointer"><User className="h-4 w-4" /></Button>
-                <Button asChild variant="ghost" size="icon" aria-label={`Wishlist${wishCount > 0 ? `, ${wishCount} items` : ""}`} className="relative h-8 w-8 text-gray-500 hover:text-black cursor-pointer">
-                  <Link href="/wishlist"><Heart className="h-4 w-4" /><CountBadge count={wishCount} /></Link>
-                </Button>
-                <Button variant="ghost" size="icon" aria-label={`Cart${count > 0 ? `, ${count} items` : ""}`} onClick={openCart} className="relative h-8 w-8 text-gray-500 hover:text-black cursor-pointer">
-                  <ShoppingBag className="h-4 w-4" /><CountBadge count={count} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Tier 2: Nav */}
-            <nav className="flex items-center justify-center gap-8" aria-label="Primary navigation" onMouseLeave={leaveMenu}>
-              {typedMegaMenus.map((m) => {
-                const isActive = activeMenuId === m.id;
-                const isCurrent = pathname?.startsWith(m.to) && m.to !== "/";
-                return (
-                  <div key={m.id} className="relative" onMouseEnter={() => enterMenu(m.id)}>
-                    <Link
-                      href={m.to}
-                      ref={(el) => { if (el) navTriggerRefs.current.set(m.id, el); }}
-                      aria-haspopup="true"
-                      aria-expanded={isActive}
-                      onClick={closeMenu}
-                      className={cn(
-                        "inline-flex items-center text-[12px] font-light tracking-[0.1em] uppercase py-4 border-b-[1.5px] transition-all duration-150 cursor-pointer",
-                        m.accent ? "text-amber-400 border-transparent"
-                          : isCurrent ? "text-black border-black"
-                            : isActive ? "text-black border-black/30"
-                              : "text-gray-400 hover:text-black border-transparent"
-                      )}
-                    >
+          {/* Desktop navigation */}
+          <nav className="hidden lg:flex items-center" aria-label="Primary" onMouseLeave={leaveMenu}>
+            {megaMenus.map((m) => {
+              const isHover = activeMenu === m.id;
+              const isRouteActive = routeActiveId === m.id;
+              const isActive = isHover || isRouteActive;
+              return (
+                <div
+                  key={m.id}
+                  className="relative"
+                  onMouseEnter={() => enterMenu(m.id)}
+                  onFocus={() => enterMenu(m.id)}
+                >
+                  <Link
+                    href={m.to}
+                    onClick={() => setActiveMenu(null)}
+                    aria-current={isRouteActive ? "page" : undefined}
+                    className={cn(
+                      "group relative inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors duration-200",
+                      m.accent
+                        ? "text-accent"
+                        : isActive
+                          ? "text-foreground"
+                          : "text-foreground/65 hover:text-foreground"
+                    )}
+                  >
+                    <span className="relative">
                       {m.label}
-                    </Link>
-                  </div>
-                );
-              })}
-            </nav>
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "pointer-events-none absolute -bottom-1 left-0 h-px w-full origin-center bg-current transition-transform duration-300 ease-out",
+                          isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                        )}
+                      />
+                    </span>
+                    {m.columns?.length > 0 && (
+                      <ChevronDown
+                        className={cn(
+                          "h-3 w-3 transition-all duration-300 ease-out",
+                          isHover ? "rotate-180 opacity-90" : "opacity-50"
+                        )}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </Link>
+                </div>
+              );
+            })}
+          </nav>
+
+          {/* Right icons */}
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" aria-label="Search" className="h-9 w-9 text-foreground/70 hover:text-foreground" onClick={() => setSearchOpen((s) => !s)}>
+              <Search className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Account" className="hidden sm:inline-flex h-9 w-9 text-foreground/70 hover:text-foreground">
+              <User className="h-4 w-4" />
+            </Button>
+            <Button asChild variant="ghost" size="icon" aria-label="Wishlist" className="relative h-9 w-9 text-foreground/70 hover:text-foreground">
+              <Link href="/wishlist">
+                <Heart className="h-4 w-4" />
+                {wishCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-accent-foreground">
+                    {wishCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Cart" onClick={openCart} className="relative h-9 w-9 text-foreground/70 hover:text-foreground">
+              <ShoppingBag className="h-4 w-4" />
+              {count > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-foreground text-[10px] font-semibold text-background">
+                  {count}
+                </span>
+              )}
+            </Button>
           </div>
         </div>
 
-        <SearchBar open={searchOpen} onClose={() => setSearchOpen(false)} />
+        {/* Mega‑menu panel (desktop) */}
+        <div
+          className={cn(
+            "absolute left-0 right-0 top-full hidden lg:block border-b border-border bg-background origin-top",
+            "transition-[opacity,transform,visibility] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+            "shadow-[0_24px_48px_-24px_hsl(var(--foreground)/0.18)]",
+            activeMenu ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
+          )}
+          onMouseEnter={() => activeMenu && enterMenu(activeMenu)}
+          onMouseLeave={leaveMenu}
+        >
+          {megaMenus.map((m) => {
+            if (m.id !== activeMenu || !m.columns) return null;
+            return (
+              <div key={m.id} className="container-page py-10">
+                <div className={cn("grid gap-12", m.feature ? "lg:grid-cols-[1fr_320px]" : "grid-cols-1")}>
+                  <div
+                    className="grid gap-x-10 gap-y-8"
+                    style={{ gridTemplateColumns: `repeat(${Math.min(m.columns.length, 4)}, minmax(0, 1fr))` }}
+                  >
+                    {m.columns.map((col, idx) => (
+                      <div key={col.heading} className="animate-fade-up" style={{ animationDelay: `${idx * 70}ms`, animationFillMode: "backwards" }}>
+                        <div className="flex items-center gap-2 mb-5">
+                          <span className="h-px w-5 bg-foreground/40" />
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">{col.heading}</p>
+                        </div>
+                        <ul className="space-y-0.5">
+                          {col.links.map((l) => (
+                            <li key={l.label}>
+                              <Link
+                                href={l.to}
+                                className="group flex items-center gap-2 py-2 text-[13.5px] text-foreground/75 hover:text-foreground transition-colors"
+                                onClick={() => setActiveMenu(null)}
+                              >
+                                <span className="relative">
+                                  {l.label}
+                                  <span className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 bg-foreground transition-transform duration-300 ease-out group-hover:scale-x-100" />
+                                </span>
+                                {l.tag && (
+                                  <span
+                                    className={cn(
+                                      "rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.18em]",
+                                      l.tag === "new" ? "bg-foreground text-background" : "bg-accent/15 text-accent"
+                                    )}
+                                  >
+                                    {l.tag}
+                                  </span>
+                                )}
+                                <ArrowUpRight className="h-3 w-3 opacity-0 -translate-x-1 transition-all duration-300 ease-out group-hover:opacity-60 group-hover:translate-x-0" />
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
 
-        <div className="relative">
-          <MegaPanel
-            menu={activeMenu}
-            onClose={closeMenu}
-            onMouseEnter={() => activeMenuId && enterMenu(activeMenuId)}
-            onMouseLeave={leaveMenu}
-          />
+                  {m.feature && (
+                    <Link
+                      href={m.feature.to}
+                      onClick={() => setActiveMenu(null)}
+                      className="group relative block overflow-hidden rounded-sm bg-secondary aspect-[4/5] animate-fade-up"
+                      style={{ animationDelay: "200ms", animationFillMode: "backwards" }}
+                    >
+                      <img
+                        src={m.feature.image}
+                        alt={m.feature.title}
+                        loading="lazy"
+                        width={800}
+                        height={1024}
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-foreground/20 to-transparent" />
+                      <div className="absolute inset-0 p-6 flex flex-col justify-end text-background">
+                        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-background/15 backdrop-blur-sm px-2.5 py-1 text-[9px] uppercase tracking-[0.28em]">
+                          <span className="h-1 w-1 rounded-full bg-background animate-pulse" />
+                          Featured
+                        </span>
+                        <h4 className="mt-3 font-serif text-2xl leading-tight">{m.feature.title}</h4>
+                        <p className="mt-1.5 text-xs opacity-90 leading-relaxed">{m.feature.copy}</p>
+                        <p className="mt-4 inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.22em] font-medium">
+                          {m.feature.cta}
+                          <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        </p>
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {/* Search bar */}
+        {searchOpen && (
+          <div className="border-t border-border bg-background animate-fade-up">
+            <form onSubmit={submitSearch} className="container-page flex items-center gap-3 py-3">
+              <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <input
+                ref={searchInputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search shirts, polos, linen…"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                aria-label="Search products"
+              />
+              <button type="button" onClick={() => setSearchOpen(false)} className="text-muted-foreground hover:text-foreground" aria-label="Close search">
+                <X className="h-4 w-4" />
+              </button>
+            </form>
+          </div>
+        )}
       </header>
 
-      {/* Mobile backdrop */}
+      {/* Mobile drawer overlay */}
       <div
-        onClick={closeMobile}
-        className={cn("fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-500 lg:hidden", mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
+        onClick={() => setMobileOpen(false)}
+        className={cn(
+          "fixed inset-0 z-overlay bg-foreground/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden",
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
         aria-hidden="true"
       />
-
-      <MobileDrawer open={mobileOpen} onClose={closeMobile} cartCount={count} wishCount={wishCount} onOpenCart={openCart} />
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-drawer h-full w-[85%] max-w-[340px] bg-background flex flex-col lg:hidden shadow-card",
+          "transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+        aria-label="Mobile navigation"
+        aria-hidden={!mobileOpen}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <Logo onClick={() => setMobileOpen(false)} />
+          <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <nav className="flex-1 overflow-y-auto px-5 py-2">
+          {megaMenus.map((m) => {
+            const open = mobileExpanded === m.id;
+            const isRouteActive = routeActiveId === m.id;
+            if (!m.columns) return null;
+            return (
+              <div key={m.id} className="border-b border-border last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => setMobileExpanded(open ? null : m.id)}
+                  className={cn(
+                    "flex items-center justify-between w-full py-4 text-sm font-medium uppercase tracking-[0.2em] transition-colors",
+                    m.accent ? "text-accent" : open || isRouteActive ? "text-foreground" : "text-foreground/80 hover:text-foreground"
+                  )}
+                  aria-expanded={open}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full bg-current transition-all duration-300",
+                        open || isRouteActive ? "opacity-100 scale-100" : "opacity-0 scale-50"
+                      )}
+                    />
+                    {m.label}
+                  </span>
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-300", open && "rotate-180 text-foreground")} />
+                </button>
+                {open && (
+                  <div className="pb-5 pl-4 space-y-4 animate-accordion-down">
+                    {m.columns.map((col) => (
+                      <div key={col.heading}>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground mb-2">{col.heading}</p>
+                        <ul className="space-y-0.5 border-l border-border/60 pl-3">
+                          {col.links.map((l) => (
+                            <li key={l.label}>
+                              <Link
+                                href={l.to}
+                                onClick={() => setMobileOpen(false)}
+                                className="flex items-center gap-2 py-2 text-sm text-foreground/75 hover:text-foreground hover:translate-x-1 transition-all duration-200"
+                              >
+                                {l.label}
+                                {l.tag && (
+                                  <span
+                                    className={cn(
+                                      "rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.18em]",
+                                      l.tag === "new" ? "bg-foreground text-background" : "bg-accent/15 text-accent"
+                                    )}
+                                  >
+                                    {l.tag}
+                                  </span>
+                                )}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+        <div className="px-5 py-4 border-t border-border space-y-2">
+          <Link href="/wishlist" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-sm text-foreground/75 hover:text-foreground">
+            <Heart className="h-4 w-4" /> Wishlist {wishCount > 0 && `(${wishCount})`}
+          </Link>
+          <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-sm text-foreground/75 hover:text-foreground">
+            <User className="h-4 w-4" /> Admin
+          </Link>
+          <p className="pt-2 text-[10px] text-muted-foreground tracking-wide">Made in Cambodia · Natural fibers</p>
+        </div>
+      </aside>
     </>
   );
 };

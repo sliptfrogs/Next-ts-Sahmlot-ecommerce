@@ -1,163 +1,208 @@
-export type MenuLink = {
-  label: string;
-  to: string;
-  icon?: string; // added optional icon name (used by Header)
-};
+// data/menu.ts – images are in /public/assets/
 
-export type MenuColumn = {
-  heading: string;
-  links: MenuLink[];
-};
-
+export type MenuLink = { label: string; to: string; tag?: "new" | "hot" };
+export type MenuColumn = { heading: string; links: MenuLink[] };
 export type MegaMenu = {
   id: string;
   label: string;
   to: string;
   columns: MenuColumn[];
-  hero?: {
-    image: string;
-    caption: string;
-    sub: string;
-    to: string;
-  };
   feature?: {
     title: string;
     copy: string;
     cta: string;
     to: string;
+    image: string;
   };
-  accent?: boolean; // amber highlight
+  accent?: boolean;
 };
 
 export const megaMenus: MegaMenu[] = [
   {
-    id: "women",
-    label: "Women",
-    to: "/shop/women",
-    accent: false,
-    hero: {
-      image:
-        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80",
-      caption: "Woven with intention",
-      sub: "Women's collection",
-      to: "/shop/women",
-    },
+    id: "new",
+    label: "New In",
+    to: "/shop?cat=new",
     columns: [
       {
-        heading: "Clothing",
+        heading: "Just Dropped",
         links: [
-          { label: "Dresses", to: "/shop/women/dresses", icon: "sparkles" },
-          { label: "Tops", to: "/shop/women/tops", icon: "shirt" },
-          { label: "Trousers", to: "/shop/women/trousers", icon: "layers" },
-          { label: "Outerwear", to: "/shop/women/outerwear", icon: "wind" },
-          { label: "Knitwear", to: "/shop/women/knitwear", icon: "feather" },
+          { label: "All New", to: "/shop?cat=new" },
+          { label: "New Tops", to: "/shop?cat=new&q=tee", tag: "new" },
+          { label: "New Shirts", to: "/shop?cat=new&q=shirt" },
+          { label: "New Polos", to: "/shop?cat=new&q=polo" },
         ],
       },
       {
-        heading: "Accessories",
+        heading: "Highlights",
         links: [
-          { label: "Bags", to: "/shop/women/bags", icon: "package" },
-          { label: "Scarves", to: "/shop/women/scarves", icon: "leaf" },
-          { label: "Jewellery", to: "/shop/women/jewellery", icon: "gem" },
+          { label: "Bestsellers", to: "/shop?q=bestseller", tag: "hot" },
+          { label: "Limited Editions", to: "/shop?q=limited" },
+          { label: "Resort '25", to: "/shop?collection=resort-25" },
         ],
       },
     ],
+    feature: {
+      title: "Resort '25",
+      copy: "Linen, light cottons, easy silhouettes.",
+      cta: "Shop the drop",
+      to: "/shop?collection=resort-25",
+      image: "/assets/menu-resort.jpg",
+    },
+  },
+  {
+    id: "clothing",
+    label: "Clothing",
+    to: "/shop",
+    columns: [
+      {
+        heading: "Tops",
+        links: [
+          { label: "T-shirts", to: "/shop?q=tee" },
+          { label: "Polos", to: "/shop?q=polo" },
+          { label: "Henleys", to: "/shop?q=henley" },
+          { label: "Knits", to: "/shop?q=knit" },
+        ],
+      },
+      {
+        heading: "Shirts",
+        links: [
+          { label: "Linen", to: "/shop?q=linen" },
+          { label: "Oxford", to: "/shop?q=oxford" },
+          { label: "Camp Collar", to: "/shop?q=camp" },
+        ],
+      },
+      {
+        heading: "Shop By Style",
+        links: [
+          {
+            label: "Daily Essentials",
+            to: "/shop?collection=daily-essentials",
+          },
+          { label: "Heritage", to: "/shop?collection=heritage" },
+          { label: "Street Edit", to: "/shop?collection=street-edit" },
+        ],
+      },
+    ],
+    feature: {
+      title: "Daily Essentials",
+      copy: "The pieces you'll actually reach for.",
+      cta: "Explore essentials",
+      to: "/shop?collection=daily-essentials",
+      image: "/assets/menu-essentials.jpg",
+    },
   },
   {
     id: "men",
     label: "Men",
-    to: "/shop/men",
-    accent: false,
-    hero: {
-      image:
-        "https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=900&q=80",
-      caption: "Natural strength",
-      sub: "Men's collection",
-      to: "/shop/men",
-    },
+    to: "/shop?cat=men",
     columns: [
       {
-        heading: "Clothing",
+        heading: "Shop Men",
         links: [
-          { label: "Shirts", to: "/shop/men/shirts", icon: "shirt" },
-          { label: "Trousers", to: "/shop/men/trousers", icon: "layers" },
-          { label: "Outerwear", to: "/shop/men/outerwear", icon: "wind" },
-          { label: "Knitwear", to: "/shop/men/knitwear", icon: "feather" },
+          { label: "All Men", to: "/shop?cat=men" },
+          { label: "Tees", to: "/shop?cat=men&q=tee" },
+          { label: "Shirts", to: "/shop?cat=men&q=shirt" },
+          { label: "Polos", to: "/shop?cat=men&q=polo" },
         ],
       },
       {
-        heading: "Accessories",
+        heading: "By Collection",
         links: [
-          { label: "Bags", to: "/shop/men/bags", icon: "package" },
-          { label: "Belts", to: "/shop/men/belts", icon: "clock" },
+          { label: "Heritage", to: "/shop?cat=men&collection=heritage" },
+          { label: "Resort '25", to: "/shop?cat=men&collection=resort-25" },
+          {
+            label: "Daily Essentials",
+            to: "/shop?cat=men&collection=daily-essentials",
+          },
         ],
       },
     ],
+    feature: {
+      title: "Made for Men",
+      copy: "Tailored fits, natural fibers.",
+      cta: "Shop men",
+      to: "/shop?cat=men",
+      image: "/assets/menu-men.jpg",
+    },
   },
   {
-    id: "fabrics",
-    label: "Fabrics",
-    to: "/shop/fabrics",
-    accent: false,
-    hero: {
-      image:
-        "https://images.unsplash.com/photo-1558618047-f5e9f1f20a3b?w=900&q=80",
-      caption: "Earth's finest fibers",
-      sub: "Natural textiles",
-      to: "/shop/fabrics",
-    },
+    id: "women",
+    label: "Women",
+    to: "/shop?cat=women",
     columns: [
       {
-        heading: "By material",
+        heading: "Shop Women",
         links: [
-          { label: "Silk", to: "/shop/fabrics/silk", icon: "sparkles" },
-          { label: "Linen", to: "/shop/fabrics/linen", icon: "leaf" },
-          { label: "Cotton", to: "/shop/fabrics/cotton", icon: "sun" },
-          { label: "Wool", to: "/shop/fabrics/wool", icon: "feather" },
-          { label: "Hemp", to: "/shop/fabrics/hemp", icon: "droplets" },
+          { label: "All Women", to: "/shop?cat=women" },
+          { label: "Tees", to: "/shop?cat=women&q=tee" },
+          { label: "Knits", to: "/shop?cat=women&q=knit" },
         ],
       },
       {
-        heading: "By craft",
+        heading: "By Collection",
         links: [
           {
-            label: "Handwoven",
-            to: "/shop/fabrics/handwoven",
-            icon: "palette",
+            label: "Daily Essentials",
+            to: "/shop?cat=women&collection=daily-essentials",
           },
-          { label: "Natural dye", to: "/shop/fabrics/dyed", icon: "droplets" },
-          {
-            label: "Embroidered",
-            to: "/shop/fabrics/embroidered",
-            icon: "star",
-          },
+          { label: "Resort '25", to: "/shop?cat=women&collection=resort-25" },
         ],
       },
     ],
+    feature: {
+      title: "Soft. Easy. You.",
+      copy: "Effortless layers for every day.",
+      cta: "Shop women",
+      to: "/shop?cat=women",
+      image: "/assets/menu-women.jpg",
+    },
+  },
+  {
+    id: "collections",
+    label: "Collections",
+    to: "/shop",
+    columns: [
+      {
+        heading: "Collections",
+        links: [
+          {
+            label: "Daily Essentials",
+            to: "/shop?collection=daily-essentials",
+          },
+          { label: "Heritage", to: "/shop?collection=heritage" },
+          { label: "Resort '25", to: "/shop?collection=resort-25" },
+          { label: "Street Edit", to: "/shop?collection=street-edit" },
+        ],
+      },
+    ],
+    feature: {
+      title: "Resort '25",
+      copy: "A breezy capsule for warm days.",
+      cta: "View collection",
+      to: "/shop?collection=resort-25",
+      image: "/assets/menu-resort.jpg",
+    },
   },
   {
     id: "sale",
     label: "Sale",
-    to: "/shop/sale",
+    to: "/shop?q=sale",
     accent: true,
-    hero: {
-      image:
-        "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=900&q=80",
-      caption: "Up to 40% off",
-      sub: "Final reductions",
-      to: "/shop/sale",
-    },
     columns: [
       {
-        heading: "Shop by",
+        heading: "On Sale",
         links: [
-          { label: "New arrivals", to: "/shop/sale/new", icon: "sparkles" },
-          { label: "Under $50", to: "/shop/sale/under-50", icon: "tag" },
-          { label: "Under $100", to: "/shop/sale/under-100", icon: "tag" },
-          { label: "Last sizes", to: "/shop/sale/last-sizes", icon: "clock" },
-          { label: "Gift ideas", to: "/shop/sale/gifts", icon: "gift" },
+          { label: "All Sale", to: "/shop?q=sale" },
+          { label: "Up to 30% Off", to: "/shop?q=sale" },
         ],
       },
     ],
+    feature: {
+      title: "Final markdowns",
+      copy: "Up to 30% off — while sizes last.",
+      cta: "Shop sale",
+      to: "/shop?q=sale",
+      image: "/assets/menu-sale.jpg",
+    },
   },
 ];
