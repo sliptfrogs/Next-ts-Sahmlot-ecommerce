@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Eye, GitCompareArrows, Heart } from "lucide-react";
 import { Product } from "@/data/products";
@@ -17,8 +17,16 @@ const ProductCard = ({ product, onQuickView }: Props) => {
   const { has, toggle } = useWishlist();
   const { has: inCompare, toggle: toggleCompare } = useCompare();
   const [activeColor, setActiveColor] = useState(product.colors[0]?.name);
-  const liked = has(product.id);
-  const comparing = inCompare(product.id);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  // Only trust these values after client mount
+  const liked = mounted && has(product.id);
+  const comparing = mounted && inCompare(product.id);
 
   return (
     <article className="group block animate-fade-up">

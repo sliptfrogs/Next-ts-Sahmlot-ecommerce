@@ -1,12 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, Trash2 } from "lucide-react";
-import { useProducts } from "@/hooks/use-products"; // adjust path if needed
+import { useProducts } from "@/hooks/use-products";
 import { useWishlist } from "@/context/WishlistContext";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/ProductCard";
-import { useState } from "react";
 import QuickViewModal from "@/components/QuickViewModal";
 import { Product } from "@/data/products";
 
@@ -14,8 +14,17 @@ const Wishlist = () => {
     const { ids, clear } = useWishlist();
     const products = useProducts();
     const [quickView, setQuickView] = useState<Product | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
+    }, []);
 
     const items = products.filter((p) => ids.includes(p.id));
+
+    // Don't render anything until after hydration
+    if (!mounted) return null;
 
     return (
         <>
@@ -24,7 +33,9 @@ const Wishlist = () => {
                     <div>
                         <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Saved</p>
                         <h1 className="mt-2 font-serif text-4xl sm:text-5xl">Wishlist</h1>
-                        <p className="mt-2 text-muted-foreground">{items.length} item{items.length === 1 ? "" : "s"} saved for later.</p>
+                        <p className="mt-2 text-muted-foreground">
+                            {items.length} item{items.length === 1 ? "" : "s"} saved for later.
+                        </p>
                     </div>
                     {items.length > 0 && (
                         <Button variant="outline" onClick={clear} className="rounded-none">
@@ -46,7 +57,9 @@ const Wishlist = () => {
                     </div>
                 ) : (
                     <div className="grid gap-x-4 gap-y-10 grid-cols-2 lg:grid-cols-4">
-                        {items.map((p) => <ProductCard key={p.id} product={p} onQuickView={setQuickView} />)}
+                        {items.map((p) => (
+                            <ProductCard key={p.id} product={p} onQuickView={setQuickView} />
+                        ))}
                     </div>
                 )}
             </section>

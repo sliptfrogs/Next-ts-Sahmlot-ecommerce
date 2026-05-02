@@ -35,8 +35,15 @@ const Header = () => {
   const [query, setQuery] = useState("");
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false); // 👈 client‑only flag
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // After mount, allow client‑only content to render
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const routeActiveId = (() => {
     if (pathname !== "/shop") return null;
@@ -102,7 +109,7 @@ const Header = () => {
       <header
         className={cn(
           "sticky top-0 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
-          "z-50 shadow-sm" // FIXED: increased z-index and added shadow
+          "z-50 shadow-sm"
         )}
       >
         <div className="container-page flex h-14 items-center justify-between gap-4 lg:h-16">
@@ -180,7 +187,8 @@ const Header = () => {
             <Button asChild variant="ghost" size="icon" aria-label="Wishlist" className="relative h-9 w-9 text-foreground/70 hover:text-foreground">
               <Link href="/wishlist">
                 <Heart className="h-4 w-4" />
-                {wishCount > 0 && (
+                {/* Only render badge after mount to avoid hydration mismatch */}
+                {mounted && wishCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-accent-foreground">
                     {wishCount}
                   </span>
@@ -399,7 +407,7 @@ const Header = () => {
         </nav>
         <div className="px-5 py-4 border-t border-border space-y-2">
           <Link href="/wishlist" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-sm text-foreground/75 hover:text-foreground">
-            <Heart className="h-4 w-4" /> Wishlist {wishCount > 0 && `(${wishCount})`}
+            <Heart className="h-4 w-4" /> Wishlist {mounted && wishCount > 0 && `(${wishCount})`}
           </Link>
           <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-sm text-foreground/75 hover:text-foreground">
             <User className="h-4 w-4" /> Admin

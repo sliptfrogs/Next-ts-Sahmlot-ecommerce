@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, GitCompareArrows, X } from "lucide-react";
 import { useCompare } from "@/context/CompareContext";
 import { useProducts } from "@/hooks/use-products";
@@ -8,19 +8,28 @@ import { cn } from "@/lib/utils";
 const CompareBar = () => {
     const { ids, remove, clear, open } = useCompare();
     const products = useProducts();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
+    }, []);
 
     const items = useMemo(
         () => ids.map((id) => products.find((p) => p.id === id)).filter(Boolean) as ReturnType<typeof useProducts>,
         [ids, products],
     );
 
+    // Don't render anything on the server or before hydration
+    if (!mounted) return null;
+    if (items.length === 0) return null;
+
     return (
         <div
             className={cn(
-                "fixed bottom-0 left-0 right-0 z-drawer transition-transform duration-500 ease-out",
-                items.length === 0 ? "translate-y-full" : "translate-y-0",
+                "fixed bottom-0 left-0 right-0 z-drawer transition-transform duration-500 ease-out translate-y-0",
             )}
-            aria-hidden={items.length === 0}
+            aria-hidden={false}
         >
             <div className="border-t border-border bg-background/95 backdrop-blur shadow-[0_-12px_40px_-16px_hsl(var(--foreground)/0.18)]">
                 <div className="container-page flex flex-wrap items-center gap-4 py-3">
@@ -78,4 +87,3 @@ const CompareBar = () => {
 };
 
 export default CompareBar;
-
