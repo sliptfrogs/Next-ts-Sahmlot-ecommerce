@@ -7,10 +7,9 @@ import { ArrowUpRight, ChevronDown, Heart, Menu, Search, ShoppingBag, User, X } 
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { megaMenus } from "@/data/menu"; // your updated menu data
+import { megaMenus } from "@/data/menu";
 import { cn } from "@/lib/utils";
 
-// ✅ Logo extracted outside component – fixes "component created during render"
 const Logo = ({ onClick }: { onClick?: () => void }) => (
   <Link
     href="/"
@@ -39,7 +38,6 @@ const Header = () => {
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Determine active menu based on route
   const routeActiveId = (() => {
     if (pathname !== "/shop") return null;
     const cat = searchParams.get("cat");
@@ -53,7 +51,6 @@ const Header = () => {
     return "clothing";
   })();
 
-  // Reset UI state on route change
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveMenu(null);
@@ -61,14 +58,12 @@ const Header = () => {
     setSearchOpen(false);
   }, [pathname, searchParams]);
 
-  // Body scroll lock for drawers / mega-menu
   useEffect(() => {
     const lock = mobileOpen || activeMenu !== null;
     document.body.style.overflow = lock ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen, activeMenu]);
 
-  // ESC closes everything
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -104,7 +99,12 @@ const Header = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-header w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header
+        className={cn(
+          "sticky top-0 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
+          "z-50 shadow-sm" // FIXED: increased z-index and added shadow
+        )}
+      >
         <div className="container-page flex h-14 items-center justify-between gap-4 lg:h-16">
           <button
             type="button"
@@ -119,7 +119,7 @@ const Header = () => {
             <Logo />
           </div>
 
-          {/* Desktop navigation */}
+          {/* Desktop navigation – removed onClick that closes menu */}
           <nav className="hidden lg:flex items-center" aria-label="Primary" onMouseLeave={leaveMenu}>
             {megaMenus.map((m) => {
               const isHover = activeMenu === m.id;
@@ -134,7 +134,6 @@ const Header = () => {
                 >
                   <Link
                     href={m.to}
-                    onClick={() => setActiveMenu(null)}
                     aria-current={isRouteActive ? "page" : undefined}
                     className={cn(
                       "group relative inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors duration-200",
@@ -199,7 +198,7 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Mega‑menu panel (desktop) */}
+        {/* Mega-menu panel (desktop) – removed onClick close from internal links */}
         <div
           className={cn(
             "absolute left-0 right-0 top-full hidden lg:block border-b border-border bg-background origin-top",
@@ -231,7 +230,6 @@ const Header = () => {
                               <Link
                                 href={l.to}
                                 className="group flex items-center gap-2 py-2 text-[13.5px] text-foreground/75 hover:text-foreground transition-colors"
-                                onClick={() => setActiveMenu(null)}
                               >
                                 <span className="relative">
                                   {l.label}
@@ -259,7 +257,6 @@ const Header = () => {
                   {m.feature && (
                     <Link
                       href={m.feature.to}
-                      onClick={() => setActiveMenu(null)}
                       className="group relative block overflow-hidden rounded-sm bg-secondary aspect-[4/5] animate-fade-up"
                       style={{ animationDelay: "200ms", animationFillMode: "backwards" }}
                     >
@@ -313,7 +310,7 @@ const Header = () => {
         )}
       </header>
 
-      {/* Mobile drawer overlay */}
+      {/* Mobile drawer – unchanged */}
       <div
         onClick={() => setMobileOpen(false)}
         className={cn(

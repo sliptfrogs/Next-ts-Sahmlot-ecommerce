@@ -1,11 +1,14 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
-import Header from "@/components/Header";
+import { CartProvider } from "@/context/CartContext";
+import { CompareProvider } from "@/context/CompareContext";
+import { RecentlyViewedProvider } from "@/context/RecentlyViewedContext";
+import { Toaster } from "sonner";
 import { Suspense } from "react";
-import AnnouncementBar from "@/components/AnnouncementBar";
+import ClientLayout from "@/components/ClientLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,13 +35,14 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <WishlistProvider>
           <CartProvider>
-            <Suspense fallback={<div className="h-16 border-b border-border bg-background" />}>
-              <AnnouncementBar/>
-              <Header />
-            </Suspense>
-            <main className="flex-1">
-              {children}
-            </main>
+            <CompareProvider>
+              <RecentlyViewedProvider>
+                <Suspense fallback={<div className="h-16 border-b border-border bg-background" />}>
+                  <ClientLayout>{children}</ClientLayout>
+                </Suspense>
+                <Toaster position="bottom-right" richColors />
+              </RecentlyViewedProvider>
+            </CompareProvider>
           </CartProvider>
         </WishlistProvider>
       </body>
